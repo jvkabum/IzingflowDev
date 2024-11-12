@@ -7,7 +7,7 @@ interface ConfigResult {
 
 export const getDaysToClose = async (): Promise<number> => {
   try {
-    const result = await db.query('SELECT value FROM settings WHERE key = $1', {
+    const result = await db.query('SELECT value FROM Settings WHERE key = $1', {
       replacements: ['DAYS_TO_CLOSE_TICKET']
     });
 
@@ -27,7 +27,7 @@ export const getDaysToClose = async (): Promise<number> => {
 
 export const setDaysToClose = async (days: number): Promise<void> => {
   try {
-    await db.query('UPDATE settings SET value = $1 WHERE key = $2', {
+    await db.query('UPDATE Settings SET value = $1 WHERE key = $2', {
       replacements: [days, 'DAYS_TO_CLOSE_TICKET']
     });
   } catch (error) {
