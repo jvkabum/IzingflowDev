@@ -27,7 +27,10 @@ const closePendingTickets = async () => {
 
     // Atualiza Tickets que estão pendentes há mais do que o número de dias especificado
     const result = await db.query(
-      'UPDATE public."Tickets" SET status = $1 WHERE status = $2 OR status = $3 AND "updatedAt" < $4',
+      `UPDATE public."Tickets" 
+       SET status = $1 
+       WHERE (status = $2 OR status = $3) 
+       AND "updatedAt" < $4`,
       {
         replacements: queryParams
       }
@@ -52,4 +55,3 @@ const scheduleClosePendingTicketsJob = () => {
 };
 
 export default scheduleClosePendingTicketsJob;
- 
