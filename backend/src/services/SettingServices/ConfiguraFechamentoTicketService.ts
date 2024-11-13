@@ -1,3 +1,4 @@
+import { QueryTypes } from 'sequelize'; // Importando QueryTypes
 import db from "../../database"; // Importe sua conexão com o banco de dados
 
 // Definir interface para o resultado
@@ -7,31 +8,35 @@ interface ConfigResult {
 
 export const getDaysToClose = async (): Promise<number> => {
   try {
-    const result = await db.query('SELECT value FROM Settings WHERE key = $1', {
-      replacements: ['DAYS_TO_CLOSE_TICKET']
+    // Realizando a consulta, agora com parâmetros substituídos corretamente
+    const result = await db.query<{ value: string }>('SELECT value FROM public."Settings" WHERE key = ?', {
+      replacements: ['daysToClose'],
+      type: QueryTypes.SELECT, // Usando QueryTypes corretamente importado
     });
 
-    // Verificar o retorno correto do resultado
-    if (result && result[0] && result[0][0]) {
-      return parseInt((result[0][0] as ConfigResult)?.value) || 0;
+    // Verificar se o resultado está correto
+    if (result && result.length > 0) {
+      const value = parseInt(result[0].value, 10);
+      return !isNaN(value) && value > 0 ? value : 0; // Retorna o valor se for maior que 0, senão 0
     } else {
-      // Caso o resultado não seja encontrado, retorne 0 por padrão
+      // Caso o resultado não seja encontrado, retorna 0
       return 0;
     }
   } catch (error) {
     // Tratar erro de consulta
-    console.error('Erro ao recuperar a configuração DAYS_TO_CLOSE_TICKET:', error);
-    return 0; // Caso haja erro, retorne 0 como fallback
+    console.error('Erro ao recuperar a configuração daysToClose:', error);
+    return 0; // Caso haja erro, retorna 0 como fallback
   }
 };
 
 export const setDaysToClose = async (days: number): Promise<void> => {
   try {
-    await db.query('UPDATE Settings SET value = $1 WHERE key = $2', {
-      replacements: [days, 'DAYS_TO_CLOSE_TICKET']
+    // Atualizando o valor de daysToClose no banco
+    await db.query('UPDATE public."Settings" SET value = ? WHERE key = ?', {
+      replacements: [days.toString(), 'daysToClose'],
     });
   } catch (error) {
     // Tratar erro de atualização
-    console.error('Erro ao atualizar DAYS_TO_CLOSE_TICKET:', error);
+    console.error('Erro ao atualizar daysToClose:', error);
   }
 };

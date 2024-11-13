@@ -2,42 +2,47 @@ import cron from 'node-cron';
 import db from '../database'; // Ajuste o caminho conforme necessário
 import { getDaysToClose } from '../services/SettingServices/ConfiguraFechamentoTicketService';
 
-// Definir a interface do resultado da consulta
-interface QueryResult {
-    rowsAffected: number; // Supondo que o segundo item do retorno seja o número de linhas afetadas
-}
-
 const closePendingTickets = async () => {
     try {
-        // Obter o número de dias para fechar os tickets
+        // Obter o número de dias para fechar os Tickets
         const daysToClose = await getDaysToClose();
         
         // Verifica se o valor de daysToClose é válido
         if (daysToClose <= 0) {
             console.error("Configuração inválida de dias para fechamento. O valor de 'daysToClose' deve ser maior que 0.");
-            return; // Evita o fechamento de tickets se o valor de dias for inválido
+            return;
         }
         
-        // Calcular a data limite para fechamento dos tickets
+        // Calcular a data limite para fechamento dos Tickets
         const cutoffDate = new Date(Date.now() - daysToClose * 24 * 60 * 60 * 1000);
 
-        // Fecha tickets que estão pendentes há mais do que o número de dias especificado
-        const result = await db.query('UPDATE tickets SET status = $1 WHERE status = $2 AND updatedAt < $3', {
-            replacements: ['closed', 'pending', cutoffDate],
-        });
+        // Log da data de corte para verificar seu valor
+        console.log("Data de corte para fechamento:", cutoffDate.toISOString()); // Exibe a data no formato ISO
 
-        // Asseverar que result[1] contém a informação que você espera (rowsAffected)
-        const queryResult = result[1] as QueryResult;
+        // Parâmetros para a consulta
+        const queryParams = ['closed', 'pending', cutoffDate];
 
-        // Verificar se algum ticket foi atualizado
-        if (queryResult.rowsAffected > 0) {
-            console.log(`Fechamento automático realizado para ${queryResult.rowsAffected} ticket(s) pendente(s) há mais de ${daysToClose} dias.`);
+        // Log dos parâmetros antes da consulta
+        console.log("Parâmetros da consulta:", queryParams);
+
+        // Atualiza Tickets que estão pendentes há mais do que o número de dias especificado
+        const result = await db.query(
+            'UPDATE public."Tickets" SET status = $1 WHERE status = $2 AND "updatedAt" < $3',
+            {
+                replacements: queryParams
+            }
+        );
+
+        // Extrair e verificar o número de linhas afetadas
+        const rowsAffected = result[1] as number;
+
+        if (rowsAffected > 0) {
+            console.log(`Fechamento automático realizado para ${rowsAffected} ticket(s) pendente(s) há mais de ${daysToClose} dias.`);
         } else {
             console.log("Nenhum ticket pendente foi encontrado para fechamento.");
         }
     } catch (error) {
-        // Tratamento de erro mais detalhado
-        console.error("Erro ao fechar tickets pendentes:", error.message || error);
+        console.error("Erro ao fechar Tickets pendentes:", error.message || error);
     }
 };
 
@@ -46,5 +51,4 @@ const scheduleClosePendingTicketsJob = () => {
     cron.schedule('* * * * *', closePendingTickets); // Executa diariamente à meia-noite
 };
 
-// Exporte o job para ser utilizado em outros arquivos
 export default scheduleClosePendingTicketsJob;
