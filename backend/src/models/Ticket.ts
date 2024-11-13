@@ -10,6 +10,7 @@ import {
   HasMany,
   AutoIncrement,
   Default,
+  // AfterCreate,
   DataType,
   AllowNull
 } from "sequelize-typescript";
@@ -22,12 +23,10 @@ import Whatsapp from "./Whatsapp";
 import AutoReply from "./AutoReply";
 import StepsReply from "./StepsReply";
 import Queue from "./Queue";
+// import ShowStepAutoReplyMessageService from "../services/AutoReplyServices/ShowStepAutoReplyMessageService";
 import Tenant from "./Tenant";
 import MessagesOffLine from "./MessageOffLine";
 import ChatFlow from "./ChatFlow";
-
-// Remova esta linha duplicada:
-// import { Model, DataTypes } from 'sequelize';
 
 @Table
 class Ticket extends Model<Ticket> {
@@ -169,6 +168,7 @@ class Ticket extends Model<Ticket> {
   @Default(null)
   @AllowNull
   @Column(DataType.JSONB)
+  // eslint-disable-next-line @typescript-eslint/ban-types
   apiConfig: object;
 
   @Column(DataType.VIRTUAL)
@@ -181,4 +181,3 @@ class Ticket extends Model<Ticket> {
 }
 
 export default Ticket;
-

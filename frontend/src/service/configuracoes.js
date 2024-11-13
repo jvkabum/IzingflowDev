@@ -10,7 +10,7 @@ export function ListarConfiguracoes (params) {
 
 export function AlterarConfiguracao (data) {
   return request({
-    url: `/settings/${data.key}/`,
+    url: `/settings/${data.Key}/`,
     method: 'put',
     data
   })
