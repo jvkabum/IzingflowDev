@@ -173,6 +173,7 @@ const FindOrCreateTicketService = async ({
     type: "create"
   });
 
+  // Verifica se a mensagem não é de você ou se o ticket não tem um usuário atribuído
   if ((msg && !msg.fromMe) || !ticketCreated.userId || isSync) {
     await CheckChatBotFlowWelcome(ticketCreated);
   }
