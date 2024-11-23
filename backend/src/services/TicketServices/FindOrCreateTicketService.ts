@@ -1,4 +1,3 @@
-// import { subHours } from "date-fns";
 import { Op } from "sequelize";
 import { Message } from "whatsapp-web.js";
 import Contact from "../../models/Contact";
@@ -7,7 +6,6 @@ import User from "../../models/User";
 import ShowTicketService from "./ShowTicketService";
 import CampaignContacts from "../../models/CampaignContacts";
 import socketEmit from "../../helpers/socketEmit";
-// import CheckChatBotWelcome from "../../helpers/CheckChatBotWelcome";
 import CheckChatBotFlowWelcome from "../../helpers/CheckChatBotFlowWelcome";
 import CreateLogTicketService from "./CreateLogTicketService";
 import MessageModel from "../../models/Message";
@@ -34,9 +32,8 @@ const FindOrCreateTicketService = async ({
   isSync,
   channel
 }: Data): Promise<Ticket | any> => {
-  // Se a mensagem for enviada por você, não cria ticket
+  // Se for uma mensagem de campanha, não abrir ticket
   if (msg && msg.fromMe) {
-    // Verifica se é mensagem de campanha
     const msgCampaign = await CampaignContacts.findOne({
       where: {
         contactId: contact.id,
@@ -46,8 +43,9 @@ const FindOrCreateTicketService = async ({
     if (msgCampaign?.id) {
       return { isCampaignMessage: true };
     }
+  }
 
-    // Verifica mensagem de despedida
+  if (msg && msg.fromMe) {
     const farewellMessage = await MessageModel.findOne({
       where: { messageId: msg.id?.id || msg.message_id || msg.item_id },
       include: ["ticket"]
@@ -61,12 +59,9 @@ const FindOrCreateTicketService = async ({
       ticket.isFarewellMessage = true;
       return ticket;
     }
-
-    // Para mensagens enviadas por você, retorna null
-    return null;
   }
 
-  // Busca ticket existente
+  // Tenta encontrar um ticket aberto ou pendente
   let ticket = await Ticket.findOne({
     where: {
       status: {
@@ -101,129 +96,51 @@ const FindOrCreateTicketService = async ({
     ]
   });
 
-  // Se encontrou ticket existente
+  // Se não encontrar um ticket aberto ou pendente, tenta encontrar um ticket fechado
+  if (!ticket) {
+    ticket = await Ticket.findOne({
+      where: {
+        status: "closed", // Busca tickets fechados
+        tenantId,
+        whatsappId,
+        contactId: groupContact ? groupContact.id : contact.id
+      }
+    });
+
+    // Se encontrar um ticket fechado, reabra-o
+    if (ticket) {
+      await ticket.update({
+        status: "pending", // Ou "open", dependendo da lógica do seu sistema
+        unreadMessages
+      });
+
+      socketEmit({
+        tenantId,
+        type: "ticket:update",
+        payload: ticket
+      });
+
+      return ticket; // Retorna o ticket reaberto
+    }
+  }
+
+  // Se um ticket aberto ou pendente foi encontrado, atualiza o número de mensagens não lidas
   if (ticket) {
     unreadMessages =
       ["telegram", "waba", "instagram", "messenger"].includes(channel) &&
       unreadMessages > 0
         ? (unreadMessages += ticket.unreadMessages)
         : unreadMessages;
-    
     await ticket.update({ unreadMessages });
-    
     socketEmit({
       tenantId,
       type: "ticket:update",
       payload: ticket
     });
-    
     return ticket;
   }
 
-  // Lógica para grupo
-  if (groupContact) {
-    ticket = await Ticket.findOne({
-      where: {
-        contactId: groupContact.id,
-        tenantId,
-        whatsappId
-      },
-      order: [["updatedAt", "DESC"]],
-      include: [
-        {
-          model: Contact,
-          as: "contact",
-          include: [
-            "extraInfo",
-            "tags",
-            {
-              association: "wallets",
-              attributes: ["id", "name"]
-            }
-          ]
-        },
-        {
-          model: User,
-          as: "user",
-          attributes: ["id", "name"]
-        },
-        {
-          association: "whatsapp",
-          attributes: ["id", "name"]
-        }
-      ]
-    });
-
-    if (ticket) {
-      await ticket.update({
-        status: "pending",
-        userId: null,
-        unreadMessages
-      });
-
-      socketEmit({
-        tenantId,
-        type: "ticket:update",
-        payload: ticket
-      });
-
-      return ticket;
-    }
-  } else {
-    // Busca ticket para contato individual
-    ticket = await Ticket.findOne({
-      where: {
-        status: {
-          [Op.in]: ["open", "pending"]
-        },
-        tenantId,
-        whatsappId,
-        contactId: contact.id
-      },
-      order: [["updatedAt", "DESC"]],
-      include: [
-        {
-          model: Contact,
-          as: "contact",
-          include: [
-            "extraInfo",
-            "tags",
-            {
-              association: "wallets",
-              attributes: ["id", "name"]
-            }
-          ]
-        },
-        {
-          model: User,
-          as: "user",
-          attributes: ["id", "name"]
-        },
-        {
-          association: "whatsapp",
-          attributes: ["id", "name"]
-        }
-      ]
-    });
-
-    if (ticket) {
-      await ticket.update({
-        status: "pending",
-        userId: null,
-        unreadMessages
-      });
-
-      socketEmit({
-        tenantId,
-        type: "ticket:update",
-        payload: ticket
-      });
-
-      return ticket;
-    }
-  }
-
-  // Configuração de tickets diretos para carteiras
+  // Se não houver tickets, cria um novo
   const DirectTicketsToWallets =
     (await ListSettingsService(tenantId))?.find(
       s => s.key === "DirectTicketsToWallets"
@@ -239,7 +156,6 @@ const FindOrCreateTicketService = async ({
     channel
   };
 
-  // Configuração de carteira para atribuição automática
   if (DirectTicketsToWallets && contact.id) {
     const wallet: any = contact;
     const wallets = await wallet.getWallets();
@@ -250,26 +166,20 @@ const FindOrCreateTicketService = async ({
     }
   }
 
-  // Cria novo ticket
   const ticketCreated = await Ticket.create(ticketObj);
 
-  // Cria log do ticket
   await CreateLogTicketService({
     ticketId: ticketCreated.id,
     type: "create"
   });
 
-  // Verifica fluxo de boas-vindas do chatbot
-  // Só dispara para mensagens recebidas ou sem usuário atribuído
   if ((msg && !msg.fromMe) || !ticketCreated.userId || isSync) {
     await CheckChatBotFlowWelcome(ticketCreated);
   }
 
-  // Busca ticket criado
   ticket = await ShowTicketService({ id: ticketCreated.id, tenantId });
   ticket.setDataValue("isCreated", true);
 
-  // Emite evento de atualização
   socketEmit({
     tenantId,
     type: "ticket:update",
