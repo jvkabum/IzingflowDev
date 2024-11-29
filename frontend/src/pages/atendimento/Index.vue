@@ -95,16 +95,6 @@
             class="btn-rounded "
             :color="cFiltroSelecionado ? 'deep-orange-9' : 'primary'"
           >
-          </q-btn>
-          <q-btn
-            :icon="pesquisaTickets.orderBy === 'updatedAt' ? 'mdi-sort-clock-descending-outline' : 'mdi-message-badge-outline'"
-            class="btn-rounded"
-            :color="pesquisaTickets.orderBy === 'unread' ? 'deep-orange-9' : 'primary'"
-            @click="toggleOrderBy"
-          >
-            <q-tooltip content-class="bg-padrao text-grey-9 text-bold">
-              {{ pesquisaTickets.orderBy === 'updatedAt' ? 'Ordenar por mensagens não lidas' : 'Ordenar por data de atualização' }}
-            </q-tooltip>
             <q-menu
               content-class="shadow-10 no-scroll"
               square
@@ -362,7 +352,7 @@
           <div class="flex flex-inline q-pt-xs">
             <q-scroll-area
               horizontal
-              style="height: 40px; width: 300px;"
+              style="heigth: 40px; width: 300px;"
             >
               <template v-for="item in whatsapps">
                 <q-btn
@@ -866,8 +856,7 @@ export default {
         queuesIds: [],
         withUnreadMessages: false,
         isNotAssignedUser: false,
-        includeNotQueueDefined: true,
-        orderBy: 'updatedAt'
+        includeNotQueueDefined: true
         // date: new Date(),
       },
       filas: [],
@@ -944,10 +933,6 @@ export default {
     }
   },
   methods: {
-    toggleOrderBy () {
-      this.pesquisaTickets.orderBy = this.pesquisaTickets.orderBy === 'updatedAt' ? 'unread' : 'updatedAt'
-      this.BuscarTicketFiltro()
-    },
     handlerNotifications (data) {
       const options = {
         body: `${data.body} - ${format(new Date(), 'HH:mm')}`,
