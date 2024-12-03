@@ -14,7 +14,9 @@
   },
   "author": "Durans/FlowDeskPro/TiOKaBuM",
   "license": "AGPL-3.0-or-later",
-  "dependencies": {},
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.9"
+  },
   "devDependencies": {
     "@commitlint/cli": "^16.0.1",
     "@commitlint/config-conventional": "^16.0.0",
