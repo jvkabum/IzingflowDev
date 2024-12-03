@@ -21,10 +21,6 @@ interface Line {
  * Interface que define configurações avançadas do fluxo
  * Controla comportamentos específicos do chatbot
  */
-/**
- * Interface que define configurações avançadas do fluxo
- * Controla comportamentos específicos do chatbot
- */
 interface Configuration {
   // Configuração para tentativas máximas de mensagens do bot
   maxRetryBotMessage: {
@@ -49,10 +45,6 @@ interface Configuration {
  * Interface que define a estrutura de um nó no fluxo
  * Cada nó representa um passo no fluxo de conversação
  */
-/**
- * Interface que define a estrutura de um nó no fluxo
- * Cada nó representa um passo no fluxo de conversação
- */
 interface NodeList {
   ico?: string;         // Ícone do nó
   id: string;           // ID único do nó
@@ -73,20 +65,12 @@ interface NodeList {
  * Interface que define a estrutura completa do fluxo
  * Representa todo o fluxo de conversação do chatbot
  */
-/**
- * Interface que define a estrutura completa do fluxo
- * Representa todo o fluxo de conversação do chatbot
- */
 interface Flow {
   name: string;         // Nome do fluxo
   lineList: Line[];     // Lista de conexões
   nodeList: NodeList[]; // Lista de nós
 }
 
-/**
- * Interface que define os dados necessários para um fluxo de chat
- * Combina o fluxo com metadados importantes
- */
 /**
  * Interface que define os dados necessários para um fluxo de chat
  * Combina o fluxo com metadados importantes
